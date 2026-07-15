@@ -1,3 +1,4 @@
+# Triggered redeploy at 2026-07-15 20:59:23
 streamlit>=1.42.0
 pandas>=2.0.0
 plotly>=5.18.0
