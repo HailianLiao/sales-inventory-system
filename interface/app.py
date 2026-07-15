@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """销售库存管理系统 - Streamlit 交互界面"""
 import os
 import sys
