@@ -1,0 +1,11 @@
+清理前 sales_history 记录数: 4,551,185
+正在找出重复组的最小 id...
+需要保留的唯一记录数: 2,604,752
+预计删除重复记录数: 1,946,433
+正在删除重复记录...
+实际删除记录数: 1,946,433
+正在回收空间...
+Traceback (most recent call last):
+  File "D:\01 工作\新每日工作任务\2026年\2月\02-04\sales_inventory_system\dedup.py", line 57, in <module>
+    cursor.execute("VACUUM")
+sqlite3.OperationalError: cannot VACUUM from within a transaction
