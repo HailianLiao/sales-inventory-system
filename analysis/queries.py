@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """分析查询模块 - 提供各种销售分析查询"""
 import os
 import sys
