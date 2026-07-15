@@ -1,0 +1,86 @@
+
+:root {
+    --sidebar-width: 220px;
+    --sidebar-bg: #1e293b;
+    --sidebar-hover: #334155;
+    --sidebar-active: #3b82f6;
+    --topbar-height: 50px;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, "Microsoft YaHei", "Segoe UI", sans-serif; background: #f1f5f9; }
+
+/* 侧边栏 */
+.sidebar {
+    width: var(--sidebar-width); min-height: 100vh; background: var(--sidebar-bg);
+    position: fixed; left: 0; top: 0; z-index: 100; transition: transform 0.3s;
+    overflow-y: auto;
+}
+.sidebar.collapsed { transform: translateX(calc(-1 * var(--sidebar-width))); }
+.sidebar-header { padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.sidebar-header h5 { color: #fff; margin: 0; font-size: 16px; }
+.sidebar-nav { padding: 8px 0; }
+.sidebar-nav .nav-link {
+    display: flex; align-items: center; padding: 10px 16px; color: #94a3b8;
+    text-decoration: none; font-size: 14px; transition: all 0.2s; border-left: 3px solid transparent;
+}
+.sidebar-nav .nav-link:hover { background: var(--sidebar-hover); color: #e2e8f0; }
+.sidebar-nav .nav-link.active { background: rgba(59,130,246,0.15); color: #60a5fa; border-left-color: var(--sidebar-active); }
+.sidebar-nav .nav-link i { width: 20px; margin-right: 10px; font-size: 16px; }
+
+/* 主内容 */
+.main-content {
+    margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width));
+    min-height: 100vh; transition: margin-left 0.3s;
+}
+.main-content.expanded { margin-left: 0; width: 100%; }
+
+/* 顶部栏 */
+.topbar {
+    height: var(--topbar-height); background: #fff; border-bottom: 1px solid #e2e8f0;
+    display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 50;
+}
+
+/* 卡片 */
+.stat-card {
+    background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: transform 0.2s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.stat-card .stat-value { font-size: 24px; font-weight: 700; color: #1e293b; }
+.stat-card .stat-label { font-size: 13px; color: #64748b; margin-top: 4px; }
+
+/* 数据表 */
+.table-container { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.table-container table { font-size: 13px; }
+.table-container th { background: #f8fafc; font-weight: 600; color: #475569; white-space: nowrap; }
+
+/* 图表 */
+.chart-box { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
+.chart-box .chart-title { font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 12px; }
+
+/* Loading */
+.loading-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.7); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 9999;
+}
+
+/* Select2 样式替代 - 可搜索下拉 */
+.select-search {
+    width: 100%; padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 6px;
+    font-size: 14px; background: #fff;
+}
+.select-search:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+
+/* 进度条 */
+.import-progress { margin: 12px 0; }
+.import-progress .progress { height: 24px; border-radius: 12px; }
+.import-progress .progress-bar { transition: width 0.3s; font-size: 12px; line-height: 24px; }
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .sidebar { transform: translateX(calc(-1 * var(--sidebar-width))); }
+    .sidebar.show { transform: translateX(0); }
+    .main-content { margin-left: 0; width: 100%; }
+}
