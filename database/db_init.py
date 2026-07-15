@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """SQLite 数据库初始化模块"""
 import sqlite3
 import os
