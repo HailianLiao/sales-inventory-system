@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """销售库存管理系统 - Flask 版"""
 import os, sys, io, json, datetime, threading
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
