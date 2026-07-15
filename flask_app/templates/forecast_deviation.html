@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}预测偏差{% endblock %}
+{% block page_subtitle %}预测偏差分析{% endblock %}
+{% block content %}
+<h4 class="mb-4">预测偏差分析</h4>
+<p class="text-muted">对比月度预测与实际销量，标记偏差 >30% 的 SKU</p>
+<div class="chart-box">
+    <div class="row g-3 mb-3">
+        <div class="col-md-4"><label class="form-label">预测月份</label><input type="month" class="form-control" id="fcMonth" value="2025-03"></div>
+        <div class="col-md-4 d-flex align-items-end"><button class="btn btn-primary" id="btnFc"><i class="bi bi-clipboard-data"></i> 分析偏差</button></div>
+    </div>
+    <div id="fcStats" class="mb-3"></div>
+    <div id="fcResult"></div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById("btnFc").addEventListener("click", function() {
+    var month = $("#fcMonth").val(); if (!month) return;
+    apiPost("/api/forecast-deviation", { month: month }, function(err, data) {
+        if (err || !data.length) { $("#fcResult").html('<div class="alert alert-info">该月份无预测数据</div>'); return; }
+        var abnormal = data.filter(d => d["状态"] === "异常").length;
+        $("#fcStats").html('<div class="row g-3"><div class="col-md-3"><div class="stat-card"><div class="stat-label">总 SKU</div><div class="stat-value">' + data.length + '</div></div></div><div class="col-md-3"><div class="stat-card"><div class="stat-label">异常 SKU (偏差>30%)</div><div class="stat-value text-danger">' + abnormal + '</div></div></div></div>');
+        var abnormalData = data.filter(d => d["状态"] === "异常");
+        var html = '<h6>异常 SKU 列表</h6><div class="table-responsive mb-3"><table class="table table-sm table-hover" id="fcAbnormal"></table></div>';
+        html += '<h6>全部数据</h6><div class="table-responsive"><table class="table table-sm table-hover" id="fcTable"></table></div>';
+        $("#fcResult").html(html);
+        if (abnormalData.length) { var cols = Object.keys(abnormalData[0]).map(k => ({title:k,data:k})); renderTable("#fcAbnormal", cols, abnormalData); }
+        else { $("#fcAbnormal").after('<p class="text-muted">无异常 SKU</p>'); }
+        var cols2 = Object.keys(data[0]).map(k => ({title:k,data:k}));
+        renderTable("#fcTable", cols2, data);
+    });
+});
+</script>
+{% endblock %}
