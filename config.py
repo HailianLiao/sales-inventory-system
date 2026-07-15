@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """项目配置"""
 import os
 
