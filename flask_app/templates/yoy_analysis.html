@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}同比分析{% endblock %}
+{% block page_subtitle %}同比分析{% endblock %}
+{% block content %}
+<h4 class="mb-4">同比分析</h4>
+<div class="chart-box">
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><label class="form-label">对比年份1</label><input type="number" class="form-control" id="yoyYear1" value="2024" min="2020" max="2026"></div>
+        <div class="col-md-3"><label class="form-label">对比年份2</label><input type="number" class="form-control" id="yoyYear2" value="2025" min="2020" max="2026"></div>
+        <div class="col-md-3"><label class="form-label">月份 (0=全年)</label><input type="number" class="form-control" id="yoyMonth" value="0" min="0" max="12"></div>
+        <div class="col-md-3 d-flex align-items-end"><button class="btn btn-primary" id="btnYoy"><i class="bi bi-arrow-left-right"></i> 执行对比</button></div>
+    </div>
+    <div id="yoyStats" class="mb-3"></div>
+    <div id="yoyResult"></div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById("btnYoy").addEventListener("click", function() {
+    var y1 = +$("#yoyYear1").val(), y2 = +$("#yoyYear2").val(), m = +$("#yoyMonth").val();
+    apiPost("/api/yoy", { year1: y1, year2: y2, month: m > 0 ? m : null }, function(err, data) {
+        if (err || !data.length) { $("#yoyResult").html('<div class="alert alert-info">无匹配数据</div>'); return; }
+        var growth = data.filter(d => d["同比增长率%"] > 0).length;
+        var decline = data.filter(d => d["同比增长率%"] < 0).length;
+        $("#yoyStats").html('<div class="row g-3"><div class="col-md-3"><div class="stat-card"><div class="stat-label">增长 SKU</div><div class="stat-value text-success">' + growth + '</div></div></div><div class="col-md-3"><div class="stat-card"><div class="stat-label">下降 SKU</div><div class="stat-value text-danger">' + decline + '</div></div></div></div>');
+        var cols = Object.keys(data[0]).map(k => ({ title: k, data: k }));
+        $("#yoyResult").html('<div class="table-responsive"><table class="table table-sm table-hover" id="yoyTable"></table></div><button class="btn btn-sm btn-outline-success mt-2" onclick="exportTableCSV(\'yoyTable\',\'同比分析_'+y1+'vs'+y2+'\')"><i class="bi bi-download"></i> 下载CSV</button>');
+        renderTable("#yoyTable", cols, data);
+    });
+});
+function exportTableCSV(tableId, filename) {
+    var table = document.getElementById(tableId); var csv = [];
+    for (var i = 0; i < table.rows.length; i++) { var row = []; for (var j = 0; j < table.rows[i].cells.length; j++) { row.push('"' + table.rows[i].cells[j].textContent.replace(/"/g,'""') + '"'); } csv.push(row.join(",")); }
+    var blob = new Blob(["\uFEFF" + csv.join("\n")], { type: "text/csv;charset=utf-8;" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename + ".csv"; a.click();
+}
+</script>
+{% endblock %}
