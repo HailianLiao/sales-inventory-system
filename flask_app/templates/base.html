@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}销售库存管理系统{% endblock %}</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.bootcss.com/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.bootcss.com/bootstrap-icons/1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- DataTables -->
+    <link href="https://cdn.bootcss.com/datatables.net-bs5/1.13.6/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="d-flex" id="wrapper">
+        <!-- 侧边栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h5><i class="bi bi-bar-chart-line"></i> 销售库存管理</h5>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+                    <i class="bi bi-speedometer2"></i> <span>数据概览</span>
+                </a>
+                <a href="/import" class="nav-link {% if request.endpoint == 'import_page' %}active{% endif %}">
+                    <i class="bi bi-cloud-upload"></i> <span>数据导入</span>
+                </a>
+                <a href="/sales-analysis" class="nav-link {% if request.endpoint == 'sales_analysis' %}active{% endif %}">
+                    <i class="bi bi-graph-up"></i> <span>销量分析</span>
+                </a>
+                <a href="/yoy-analysis" class="nav-link {% if request.endpoint == 'yoy_analysis' %}active{% endif %}">
+                    <i class="bi bi-arrow-left-right"></i> <span>同比分析</span>
+                </a>
+                <a href="/rankings" class="nav-link {% if request.endpoint == 'rankings' %}active{% endif %}">
+                    <i class="bi bi-trophy"></i> <span>排行榜</span>
+                </a>
+                <a href="/purchase-analysis" class="nav-link {% if request.endpoint == 'purchase_analysis' %}active{% endif %}">
+                    <i class="bi bi-cart-check"></i> <span>采购订单分析</span>
+                </a>
+                <a href="/forecast-deviation" class="nav-link {% if request.endpoint == 'forecast_deviation_page' %}active{% endif %}">
+                    <i class="bi bi-clipboard-data"></i> <span>预测偏差</span>
+                </a>
+                <a href="/field-replace" class="nav-link {% if request.endpoint == 'field_replace' %}active{% endif %}">
+                    <i class="bi bi-pencil-square"></i> <span>字段批量替换</span>
+                </a>
+                <a href="/custom-query" class="nav-link {% if request.endpoint == 'custom_query' %}active{% endif %}">
+                    <i class="bi bi-search"></i> <span>自定义查询</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content" id="main-content">
+            <!-- 顶部栏 -->
+            <div class="topbar">
+                <button class="btn btn-sm btn-outline-secondary" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <span class="ms-3 text-muted">{% block page_subtitle %}{% endblock %}</span>
+            </div>
+
+            <!-- 页面内容 -->
+            <div class="container-fluid p-4">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading 遮罩 -->
+    <div class="loading-overlay" id="loadingOverlay" style="display:none;">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2" id="loadingText">加载中...</p>
+    </div>
+
+    <!-- JS -->
+    <script src="https://cdn.bootcss.com/jquery/3.7.0/jquery.min.js"></script>
+    <script src="https://cdn.bootcss.com/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.bootcss.com/datatables.net/1.13.6/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.bootcss.com/datatables.net-bs5/1.13.6/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.bootcss.com/echarts/5.4.3/echarts.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
