@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}字段批量替换{% endblock %}
+{% block page_subtitle %}字段批量替换{% endblock %}
+{% block content %}
+<h4 class="mb-4">字段批量替换</h4>
+<div class="chart-box mb-4">
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><label class="form-label">目标表</label><select class="form-select" id="rpTable">{% for name,val in table_map.items() %}<option value="{{ val }}">{{ name }}{% endfor %}</select></div>
+        <div class="col-md-3"><label class="form-label">字段名</label><input type="text" class="form-control" id="rpField" placeholder="例: 销售部门"></div>
+        <div class="col-md-3"><label class="form-label">原值</label><input type="text" class="form-control" id="rpOld" placeholder="例: 厨电雄狮团队"></div>
+        <div class="col-md-3"><label class="form-label">新值</label><input type="text" class="form-control" id="rpNew" placeholder="例: 康佳厨电事业部"></div>
+        <div class="col-md-3"><label class="form-label">限定年份 (可选)</label><select class="form-select" id="rpYear"><option value="">全部年份</option></select></div>
+    </div>
+    <div id="rpPreview" class="mb-3"></div>
+    <button class="btn btn-primary" id="btnPreview"><i class="bi bi-eye"></i> 预览影响</button>
+    <button class="btn btn-danger ms-2" id="btnReplace" style="display:none;"><i class="bi bi-pencil-square"></i> 执行替换</button>
+</div>
+{% if log_data %}
+<div class="chart-box">
+    <div class="chart-title">替换历史</div>
+    <div class="table-responsive"><table class="table table-sm table-hover" id="logTable">
+        <thead><tr><th>ID</th><th>表名</th><th>字段名</th><th>原值</th><th>新值</th><th>影响行数</th><th>操作时间</th></tr></thead>
+        <tbody>{% for r in log_data %}<tr><td>{{ r.id }}</td><td>{{ r['表名'] }}</td><td>{{ r['字段名'] }}</td><td>{{ r['原值'] }}</td><td>{{ r['新值'] }}</td><td>{{ r['影响行数'] }}</td><td>{{ r['操作时间'] }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById("btnPreview").addEventListener("click", function() {
+    apiPost("/api/field-replace", { table: $("#rpTable").val(), field: $("#rpField").val(), old_value: $("#rpOld").val(), new_value: $("#rpNew").val(), filter_year: $("#rpYear").val() }, function(err, data) {
+        if (err) { alert(err); return; }
+        $("#rpPreview").html('<div class="alert alert-info">将影响 <strong>' + data.preview.toLocaleString() + '</strong> 条记录</div>');
+        $("#btnReplace").show();
+    });
+});
+document.getElementById("btnReplace").addEventListener("click", function() {
+    if (!confirm("确认执行替换？")) return;
+    apiPost("/api/field-replace", { table: $("#rpTable").val(), field: $("#rpField").val(), old_value: $("#rpOld").val(), new_value: $("#rpNew").val(), confirm: true, filter_year: $("#rpYear").val() }, function(err, data) {
+        if (err) { alert(err); return; }
+        if (data.success) { alert("替换完成！共更新 " + data.affected.toLocaleString() + " 条记录"); location.reload(); }
+    });
+});
+
+// 加载年份选项
+$.get("/api/year-distribution", function(data) {
+    var sel = document.getElementById("rpYear");
+    data.forEach(function(d) {
+        var opt = document.createElement("option");
+        opt.value = d.year;
+        opt.textContent = d.year + "年";
+        sel.appendChild(opt);
+    });
+});
+
+</script>
+{% endblock %}
