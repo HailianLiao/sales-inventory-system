@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}自定义查询{% endblock %}
+{% block page_subtitle %}数据筛选查询{% endblock %}
+{% block content %}
+<h4 class="mb-4">数据筛选查询</h4>
+<p class="text-muted">通过下方筛选条件查询销售数据，无需编写任何代码</p>
+<div class="chart-box">
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><label class="form-label">查询类型</label><select class="form-select" id="qType"><option>销售明细</option><option>按SKU汇总</option><option>按部门汇总</option><option>按客户汇总</option><option>按月汇总</option></select></div>
+        <div class="col-md-3"><label class="form-label">起始年份(0=不限)</label><input type="number" class="form-control" id="qYearStart" value="0"></div>
+        <div class="col-md-3"><label class="form-label">结束年份(0=不限)</label><input type="number" class="form-control" id="qYearEnd" value="0"></div>
+        <div class="col-md-3"><label class="form-label">月份(可多选)</label><select class="form-select" id="qMonths" multiple size="1"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
+    </div>
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><label class="form-label">物料编码</label><input type="text" class="form-control" id="qSku" placeholder="留空=不限"></div>
+        <div class="col-md-3"><label class="form-label">销售部门</label><input type="text" class="form-control" id="qDept" placeholder="留空=不限"></div>
+        <div class="col-md-3"><label class="form-label">客户</label><input type="text" class="form-control" id="qCust" placeholder="留空=不限"></div>
+        <div class="col-md-3"><label class="form-label">产品类别</label><input type="text" class="form-control" id="qCat" placeholder="留空=不限"></div>
+    </div>
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><label class="form-label">客户类别</label><input type="text" class="form-control" id="qCustCat" placeholder="留空=不限"></div>
+        <div class="col-md-3"><label class="form-label">排序字段</label><input type="text" class="form-control" id="qSort" value="总销量"></div>
+        <div class="col-md-2"><label class="form-label">排序方向</label><select class="form-select" id="qDir"><option>降序</option><option>升序</option></select></div>
+        <div class="col-md-2"><label class="form-label">最多显示</label><input type="number" class="form-control" id="qLimit" value="500"></div>
+        <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary" id="btnQuery"><i class="bi bi-search"></i> 查询</button></div>
+    </div>
+    <div id="queryResult"></div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById("btnQuery").addEventListener("click", function() {
+    var months = $("#qMonths").val();
+    var params = {
+        query_type: $("#qType").val(),
+        year_start: +$("#qYearStart").val() > 0 ? +$("#qYearStart").val() : null,
+        year_end: +$("#qYearEnd").val() > 0 ? +$("#qYearEnd").val() : null,
+        months: months && months.length ? months.map(Number) : null,
+        sku: $("#qSku").val() || null, department: $("#qDept").val() || null,
+        customer: $("#qCust").val() || null, category: $("#qCat").val() || null,
+        customer_category: $("#qCustCat").val() || null,
+        sort_field: $("#qSort").val(), sort_order: $("#qDir").val() === "降序" ? "DESC" : "ASC",
+        limit: +$("#qLimit").val()
+    };
+    apiPost("/api/custom-query", params, function(err, data) {
+        if (err) { alert(err); return; }
+        if (!data.length) { $("#queryResult").html('<div class="alert alert-info">无匹配数据</div>'); return; }
+        var cols = Object.keys(data[0]).map(k => ({title:k,data:k}));
+        var dlParams = encodeURIComponent(JSON.stringify(params));
+        $("#queryResult").html('<div class="alert alert-success">查询返回 ' + data.length + ' 条记录</div><div class="table-responsive"><table class="table table-sm table-hover" id="queryTable"></table></div><button class="btn btn-sm btn-outline-success mt-2" onclick="window.open(\'/api/download?type=custom&params=\' + \'' + dlParams + '\')"><i class="bi bi-download"></i> 下载CSV</button>');
+        renderTable("#queryTable", cols, data);
+    });
+});
+</script>
+{% endblock %}
