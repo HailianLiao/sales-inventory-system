@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}排行榜{% endblock %}
+{% block page_subtitle %}排行榜{% endblock %}
+{% block content %}
+<h4 class="mb-4">排行榜</h4>
+<ul class="nav nav-tabs mb-3"><li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-sku">SKU 排行</a></li><li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-dept">部门/渠道排行</a></li></ul>
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="tab-sku">
+        <div class="chart-box">
+            <div class="row g-3 mb-3">
+                <div class="col-md-2"><label class="form-label">年份(0=全部)</label><input type="number" class="form-control" id="rankYear" value="2025"></div>
+                <div class="col-md-2"><label class="form-label">月份(0=全年)</label><input type="number" class="form-control" id="rankMonth" value="0"></div>
+                <div class="col-md-2"><label class="form-label">显示条数</label><input type="number" class="form-control" id="rankTop" value="20"></div>
+                <div class="col-md-2"><label class="form-label">排序指标</label><select class="form-select" id="rankMetric"><option>销量</option><option>销售额</option></select></div>
+                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary" id="btnSkuRank"><i class="bi bi-trophy"></i> 查询</button></div>
+            </div>
+            <div id="skuRankResult"></div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="tab-dept">
+        <div class="chart-box">
+            <div class="row g-3 mb-3">
+                <div class="col-md-3"><label class="form-label">年份(0=全部)</label><input type="number" class="form-control" id="deptYear" value="2025"></div>
+                <div class="col-md-3"><label class="form-label">月份(0=全年)</label><input type="number" class="form-control" id="deptMonth" value="0"></div>
+                <div class="col-md-3 d-flex align-items-end"><button class="btn btn-primary" id="btnDeptRank"><i class="bi bi-trophy"></i> 查询</button></div>
+            </div>
+            <div id="deptRankResult"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById("btnSkuRank").addEventListener("click", function() {
+    var y = +$("#rankYear").val(), m = +$("#rankMonth").val(), n = +$("#rankTop").val(), metric = $("#rankMetric").val();
+    apiPost("/api/top-sku", { year: y>0?y:null, month: m>0?m:null, top_n: n, metric: metric }, function(err, data) {
+        if (err || !data.length) { $("#skuRankResult").html('<div class="alert alert-info">无匹配数据</div>'); return; }
+        $("#skuRankResult").html('<div id="skuChart" style="height:400px;"></div><div class="table-responsive"><table class="table table-sm table-hover" id="skuTable"></table></div>');
+        var cols = Object.keys(data[0]).map(k => ({ title: k, data: k }));
+        renderTable("#skuTable", cols, data);
+        var top20 = data.slice(0, 20);
+        renderChart("skuChart", { tooltip:{trigger:"axis"}, xAxis:{type:"category",data:top20.map(d=>d["物料名称"]),axisLabel:{rotate:45,fontSize:10}}, yAxis:{type:"value"}, series:[{name:metric,type:"bar",data:top20.map(d=>d[metric]),itemStyle:{color:"#f59e0b"}}] });
+    });
+});
+document.getElementById("btnDeptRank").addEventListener("click", function() {
+    var y = +$("#deptYear").val(), m = +$("#deptMonth").val();
+    apiPost("/api/top-dept", { year: y>0?y:null, month: m>0?m:null }, function(err, data) {
+        if (err || !data.length) { $("#deptRankResult").html('<div class="alert alert-info">无匹配数据</div>'); return; }
+        $("#deptRankResult").html('<div id="deptChart" style="height:400px;"></div><div class="table-responsive"><table class="table table-sm table-hover" id="deptTable"></table></div>');
+        var cols = Object.keys(data[0]).map(k => ({ title: k, data: k }));
+        renderTable("#deptTable", cols, data);
+        renderChart("deptChart", { tooltip:{trigger:"item"}, series:[{name:"销量",type:"pie",data:data.slice(0,10).map(d=>({name:d["销售部门"],value:d["销量"]})),label:{formatter:"{b}: {d}%"}}] });
+    });
+});
+</script>
+{% endblock %}
