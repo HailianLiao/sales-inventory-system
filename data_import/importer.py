@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """销售数据导入模块 - 兼容 2020-2026 各年度 Excel 差异"""
 import os
 import sys
