@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}数据概览 - 销售库存管理系统{% endblock %}
+{% block page_subtitle %}数据概览{% endblock %}
+
+{% block content %}
+<h4 class="mb-4">数据概览</h4>
+
+<!-- 统计卡片 -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-label">数据年份</div>
+            <div class="stat-value">{{ stats['年份范围'][0] }}-{{ stats['年份范围'][1] if stats['年份范围'][0] else '无数据' }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-label">SKU 数量</div>
+            <div class="stat-value">{{ "{:,}".format(stats['SKU数量']) }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-label">客户数量</div>
+            <div class="stat-value">{{ "{:,}".format(stats['客户数量']) }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-label">部门数量</div>
+            <div class="stat-value">{{ "{:,}".format(stats['部门数量']) }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-label">总销售收入(折扣后)</div>
+            <div class="stat-value">{{ "{:,.2f}".format(stats['总销售收入']) }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-label">总价税合计(折扣后)</div>
+            <div class="stat-value">{{ "{:,.2f}".format(stats['总价税合计']) }}</div>
+        </div>
+    </div>
+</div>
+
+{% if stats['总记录数'] > 0 %}
+<!-- 年度数据表 -->
+<div class="chart-box">
+    <div class="chart-title">各年度数据</div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover" id="yearTable">
+            <thead><tr><th>年份</th><th>总销量</th><th>销售收入(折扣后)</th><th>价税合计(折扣后)</th><th>SKU数</th><th>客户数</th></tr></thead>
+            <tbody>
+            {% for row in year_dist %}
+            <tr><td>{{ row['年份'] }}</td><td>{{ "{:,.0f}".format(row['总销量']) }}</td><td>{{ "{:,.2f}".format(row['销售收入(折扣后)']) }}</td><td>{{ "{:,.2f}".format(row['价税合计(折扣后)']) }}</td><td>{{ row['SKU数'] }}</td><td>{{ row['客户数'] }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 年度销量趋势图 -->
+<div class="chart-box">
+    <div class="chart-title">年度总销量趋势</div>
+    <div id="yearChart" style="height:350px;"></div>
+</div>
+
+<!-- 月度趋势图 -->
+<div class="chart-box">
+    <div class="chart-title">月度销量趋势</div>
+    <div id="monthChart" style="height:350px;"></div>
+</div>
+{% else %}
+<div class="alert alert-info">数据库为空，请先导入数据</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if stats['总记录数'] > 0 %}
+// 年度柱状图
+var yearData = {{ year_dist | tojson }};
+renderChart("yearChart", {
+    tooltip: { trigger: "axis" },
+    xAxis: { type: "category", data: yearData.map(d => d['年份']) },
+    yAxis: { type: "value", axisLabel: { formatter: v => (v >= 10000 ? (v/10000).toFixed(0) + "万" : v) } },
+    series: [{ name: "总销量", type: "bar", data: yearData.map(d => d['总销量']),
+        label: { show: true, position: "top", formatter: p => p.value.toLocaleString() },
+        itemStyle: { color: "#3b82f6" }
+    }]
+});
+
+// 月度折线图
+var monthData = {{ monthly | tojson }};
+renderChart("monthChart", {
+    tooltip: { trigger: "axis" },
+    xAxis: { type: "category", data: monthData.map(d => d['年和月']), axisLabel: { rotate: 45, fontSize: 11 } },
+    yAxis: { type: "value", axisLabel: { formatter: v => (v >= 10000 ? (v/10000).toFixed(0) + "万" : v) } },
+    series: [{ name: "总销量", type: "line", data: monthData.map(d => d['总销量']),
+        smooth: true, areaStyle: { opacity: 0.15 }, itemStyle: { color: "#10b981" }
+    }]
+});
+{% endif %}
+</script>
+{% endblock %}
