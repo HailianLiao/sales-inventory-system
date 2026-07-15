@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}数据导入 - 销售库存管理系统{% endblock %}
+{% block page_subtitle %}数据导入{% endblock %}
+
+{% block content %}
+<h4 class="mb-4">数据导入</h4>
+
+<div class="chart-box mb-4">
+    <div class="chart-title">数据源文件</div>
+    <p class="text-muted">数据源目录: <code>F:\原D盘文件-E\每日库存、采购、入库表\</code></p>
+    <table class="table table-sm">
+        <thead><tr><th>年份</th><th>文件名</th><th>状态</th></tr></thead>
+        <tbody>
+        {% for f in file_status %}
+        <tr><td>{{ f.year }}</td><td>{{ f.file }}</td><td>{% if f.exists %}<span class="badge bg-success">存在</span>{% else %}<span class="badge bg-danger">不存在</span>{% endif %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <p class="mt-2">当前数据库已有 <strong>{{ "{:,}".format(stats['总记录数']) }}</strong> 条销售记录</p>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="chart-box">
+            <div class="chart-title">全量重新导入</div>
+            <p class="text-muted small">清空现有数据后重新导入全部年份</p>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="confirmClear">
+                <label class="form-check-label" for="confirmClear">我确认要清空现有数据并重新导入</label>
+            </div>
+            <button class="btn btn-primary" id="btnFullImport" disabled>
+                <i class="bi bi-arrow-repeat"></i> 全量重新导入
+            </button>
+            <div id="fullProgress" class="import-progress" style="display:none;">
+                <div class="progress"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%">导入中...</div></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="chart-box">
+            <div class="chart-title">增量追加导入</div>
+            <p class="text-muted small">保留现有数据，追加导入（可能产生重复）</p>
+            <button class="btn btn-outline-primary" id="btnAppendImport">
+                <i class="bi bi-plus-circle"></i> 增量追加导入
+            </button>
+            <div id="appendProgress" class="import-progress" style="display:none;">
+                <div class="progress"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%">导入中...</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导入结果 -->
+<div id="importResult" class="chart-box" style="display:none;">
+    <div class="chart-title">导入结果</div>
+    <div id="importResultContent"></div>
+</div>
+
+
+<!-- 按年份删除数据 -->
+<div class="chart-box mb-4">
+    <div class="chart-title">按年份删除数据</div>
+    <p class="text-muted small">选择要删除的年份，仅删除该年份的销售数据（不影响其他年份）</p>
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label">选择年份</label>
+            <select class="form-select" id="deleteYearSelect">
+                <option value="">加载中...</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <div id="deletePreview" class="text-muted small"></div>
+        </div>
+        <div class="col-md-4">
+            <button class="btn btn-outline-danger" id="btnPreviewDelete"><i class="bi bi-eye"></i> 预览影响</button>
+            <button class="btn btn-danger ms-2" id="btnConfirmDelete" style="display:none;"><i class="bi bi-trash"></i> 确认删除</button>
+        </div>
+    </div>
+    <div id="deleteResult" class="mt-3"></div>
+</div>
+
+<!-- 上传自定义数据 -->
+<div class="chart-box mt-4">
+    <div class="chart-title">上传自定义数据</div>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">目标表</label>
+                <select class="form-select" name="target_table">
+                    {% for name, val in table_map.items() %}
+                    <option value="{{ val }}">{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Excel 文件</label>
+                <input class="form-control" type="file" name="file" accept=".xlsx,.xls">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success mt-3"><i class="bi bi-upload"></i> 确认导入</button>
+    </form>
+    <div id="uploadResult" class="mt-3"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 全量导入确认
+document.getElementById("confirmClear").addEventListener("change", function() {
+    document.getElementById("btnFullImport").disabled = !this.checked;
+});
+
+// 页面加载时检查是否有正在运行的导入
+(function checkRunningImport() {
+    $.get("/api/import-progress", function(s) {
+        if (s.running && !s.done) {
+            // 有正在运行的导入，显示进度
+            var progId = "fullProgress";
+            var prog = document.getElementById(progId);
+            prog.style.display = "block";
+            startPolling(progId);
+        }
+    });
+})();
+
+function startPolling(progressId) {
+    var prog = document.getElementById(progressId);
+    return setInterval(function() {
+        $.get("/api/import-progress", function(s) {
+            console.log("进度:", JSON.stringify(s));
+            if (s.error) {
+                clearInterval(pollTimer);
+                prog.style.display = "none";
+                alert("导入出错: " + s.error);
+                return;
+            }
+            // 更新进度条
+            var pct = 0;
+            if (s.phase === "read") { pct = 2; }
+            else if (s.phase === "loaded") { pct = 5; }
+            else if (s.phase === "clear") { pct = 1; }
+            else if (s.phase === "stats") { pct = 99; }
+            else if (s.year_total > 0) { pct = 5 + Math.round(s.year_imported / s.year_total * 95); }
+            else { pct = 2; }
+            var bar = prog.querySelector(".progress-bar");
+            bar.style.width = Math.max(pct, 2) + "%";
+            bar.textContent = s.message || "准备中...";
+            if (s.done) {
+                clearInterval(pollTimer);
+                prog.style.display = "none";
+                var html = "<div class='alert alert-success'>导入完成！共 <strong>" + s.total.toLocaleString() + "</strong> 条记录</div><ul>";
+                s.results.forEach(function(r) { html += "<li>" + r[0] + "年: " + r[1].toLocaleString() + " 行 - " + r[2] + "</li>"; });
+                html += "</ul>";
+                document.getElementById("importResultContent").innerHTML = html;
+                document.getElementById("importResult").style.display = "block";
+            }
+        });
+    }, 1000);
+}
+
+function doImport(action, progressId) {
+    var prog = document.getElementById(progressId);
+    prog.style.display = "block";
+    var bar = prog.querySelector(".progress-bar");
+    bar.style.width = "1%";
+    bar.textContent = "正在启动导入...";
+
+    var formData = new FormData();
+    formData.append("action", action);
+    // 1. 启动后台导入
+    $.ajax({
+        url: "/import", type: "POST", data: formData, processData: false, contentType: false,
+        success: function(res) {
+            console.log("启动响应:", res);
+            if (!res.success) { alert(res.error); prog.style.display = "none"; return; }
+            // 2. 开始轮询进度
+            var pollTimer = startPolling(progressId);
+        },
+        error: function(xhr, status, err) {
+            console.error("启动失败:", status, err);
+            prog.style.display = "none";
+            alert("启动导入失败: " + err);
+        }
+    });
+}
+
+document.getElementById("btnFullImport").addEventListener("click", function() { doImport("full_import", "fullProgress"); });
+document.getElementById("btnAppendImport").addEventListener("click", function() { doImport("append_import", "appendProgress"); });
+
+// 上传
+document.getElementById("uploadForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    var formData = new FormData(this);
+    formData.append("action", "upload");
+    showLoading("正在上传...");
+    $.ajax({
+        url: "/import", type: "POST", data: formData, processData: false, contentType: false,
+        success: function(res) {
+            hideLoading();
+            if (res.success) {
+                document.getElementById("uploadResult").innerHTML = '<div class="alert alert-success">成功导入 ' + res.rows.toLocaleString() + ' 行</div>';
+            } else {
+                document.getElementById("uploadResult").innerHTML = '<div class="alert alert-danger">导入失败: ' + res.error + '</div>';
+            }
+        },
+        error: function() { hideLoading(); document.getElementById("uploadResult").innerHTML = '<div class="alert alert-danger">上传失败</div>'; }
+    });
+});
+
+// 加载年份分布
+function loadYearOptions() {
+    $.get("/api/year-distribution", function(data) {
+        var sel = document.getElementById("deleteYearSelect");
+        sel.innerHTML = '<option value="">-- 请选择年份 --</option>';
+        data.forEach(function(d) {
+            var opt = document.createElement("option");
+            opt.value = d.year;
+            opt.textContent = d.year + "年 (" + d.count.toLocaleString() + " 条)";
+            sel.appendChild(opt);
+        });
+        if (data.length === 0) {
+            sel.innerHTML = '<option value="">数据库暂无数据</option>';
+        }
+    });
+}
+loadYearOptions();
+
+document.getElementById("btnPreviewDelete").addEventListener("click", function() {
+    var year = document.getElementById("deleteYearSelect").value;
+    if (!year) { alert("请先选择年份"); return; }
+    $.ajax({
+        url: "/api/delete-by-year", type: "POST",
+        data: JSON.stringify({year: year}),
+        contentType: "application/json",
+        success: function(res) {
+            if (res.success) {
+                document.getElementById("deletePreview").innerHTML =
+                    '<span class="text-danger">将删除 <strong>' + res.preview.toLocaleString() + '</strong> 条 ' + res.year + '年 数据</span>';
+                document.getElementById("btnConfirmDelete").style.display = "inline-block";
+            } else {
+                alert("查询失败: " + res.error);
+            }
+        }
+    });
+});
+
+document.getElementById("btnConfirmDelete").addEventListener("click", function() {
+    var year = document.getElementById("deleteYearSelect").value;
+    if (!confirm("确认删除 " + year + "年 的全部数据？此操作不可恢复！")) return;
+    $.ajax({
+        url: "/api/delete-by-year", type: "POST",
+        data: JSON.stringify({year: year, confirm: true}),
+        contentType: "application/json",
+        success: function(res) {
+            if (res.success) {
+                document.getElementById("deleteResult").innerHTML =
+                    '<div class="alert alert-success">成功删除 ' + res.deleted.toLocaleString() + ' 条 ' + res.year + '年 数据</div>';
+                document.getElementById("btnConfirmDelete").style.display = "none";
+                document.getElementById("deletePreview").innerHTML = "";
+                loadYearOptions();
+            } else {
+                alert("删除失败: " + res.error);
+            }
+        }
+    });
+});
+
+</script>
+{% endblock %}
