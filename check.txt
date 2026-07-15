@@ -1,0 +1,32 @@
+Total records: 2580106
+  Year 2019: 341 records
+  Year 2020: 66936 records
+  Year 2021: 286891 records
+  Year 2022: 625615 records
+  Year 2023: 636050 records
+  Year 2024: 505526 records
+  Year 2025: 377672 records
+  Year 2026: 81075 records
+
+Date samples:
+  Year 2019: 2019-12-31
+  Year 2020: 2020-01-18
+  Year 2021: 2021-01-26
+  Year 2022: 2022-01-21
+  Year 2023: 2023-01-15
+  Year 2024: 2024-01-26
+  Year 2025: 2025-01-22
+
+Distinct SKUs: 6380
+
+Top 10 departments:
+  康佳小家电事业部B2B业务部: 464275
+  B2B业务团队: 444037
+  康佳小家电事业部电子商务部: 352453
+  电商雪豹团队: 330289
+  小家电事业部B2B业务部: 268544
+  电子商务部: 100094
+  电商飞鹰团队: 64579
+  内部合伙-飞鹰: 57874
+  社群营销团队: 54208
+  跨境电商（出口）团队: 47179
