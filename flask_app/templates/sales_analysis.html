@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}销量分析{% endblock %}
+{% block page_subtitle %}销量分析{% endblock %}
+{% block content %}
+<h4 class="mb-4">销量分析</h4>
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-avg">月均销量</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-trend">月度趋势</a></li>
+</ul>
+<div class="tab-content">
+    <!-- 月均销量 -->
+    <div class="tab-pane fade show active" id="tab-avg">
+        <div class="chart-box">
+            <div class="row g-3 mb-3">
+                <div class="col-md-3"><label class="form-label">近几个月</label><input type="number" class="form-control" id="avgMonths" value="3" min="1" max="36"></div>
+                <div class="col-md-3"><label class="form-label">物料编码</label><input type="text" class="form-control" id="avgSku" placeholder="留空=全部"></div>
+                <div class="col-md-3"><label class="form-label">销售部门</label><input type="text" class="form-control" id="avgDept" placeholder="留空=全部"></div>
+                <div class="col-md-3 d-flex align-items-end"><button class="btn btn-primary" id="btnAvg"><i class="bi bi-search"></i> 查询</button></div>
+            </div>
+            <div id="avgResult"></div>
+        </div>
+    </div>
+    <!-- 月度趋势 -->
+    <div class="tab-pane fade" id="tab-trend">
+        <div class="chart-box">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4"><label class="form-label">物料编码</label><input type="text" class="form-control" id="trendSku" placeholder="留空=全部"></div>
+                <div class="col-md-4"><label class="form-label">销售部门</label><input type="text" class="form-control" id="trendDept" placeholder="留空=全部"></div>
+                <div class="col-md-4 d-flex align-items-end"><button class="btn btn-primary" id="btnTrend"><i class="bi bi-search"></i> 查询</button></div>
+            </div>
+            <div id="trendCharts"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById("btnAvg").addEventListener("click", function() {
+    apiPost("/api/monthly-avg", { months: +$("#avgMonths").val(), sku: $("#avgSku").val() || null, department: $("#avgDept").val() || null }, function(err, data) {
+        if (err) { alert(err); return; }
+        if (!data.length) { $("#avgResult").html('<div class="alert alert-info">无匹配数据</div>'); return; }
+        var cols = Object.keys(data[0]).map(k => ({ title: k, data: k }));
+        $("#avgResult").html('<div class="table-responsive"><table class="table table-sm table-hover" id="avgTable"></table></div><button class="btn btn-sm btn-outline-success mt-2" onclick="exportTableCSV(\'avgTable\',\'月均销量\')"><i class="bi bi-download"></i> 下载CSV</button>');
+        renderTable("#avgTable", cols, data);
+    });
+});
+document.getElementById("btnTrend").addEventListener("click", function() {
+    apiPost("/api/monthly-trend", { sku: $("#trendSku").val() || null, department: $("#trendDept").val() || null }, function(err, data) {
+        if (err || !data.length) { $("#trendCharts").html('<div class="alert alert-info">无匹配数据</div>'); return; }
+        $("#trendCharts").html('<div id="trendLine" style="height:350px;"></div><div id="trendBar" style="height:350px;"></div>');
+        renderChart("trendLine", { tooltip:{trigger:"axis"}, xAxis:{type:"category",data:data.map(d=>d["年月"]),axisLabel:{rotate:45}}, yAxis:{type:"value"}, series:[{name:"销量",type:"line",data:data.map(d=>d["销量"]),smooth:true,itemStyle:{color:"#3b82f6"}}] });
+        renderChart("trendBar", { tooltip:{trigger:"axis"}, xAxis:{type:"category",data:data.map(d=>d["年月"]),axisLabel:{rotate:45}}, yAxis:{type:"value"}, series:[{name:"销售额",type:"bar",data:data.map(d=>d["销售额"]),itemStyle:{color:"#10b981"}}] });
+    });
+});
+function exportTableCSV(tableId, filename) {
+    var table = document.getElementById(tableId);
+    var csv = [];
+    for (var i = 0; i < table.rows.length; i++) {
+        var row = [];
+        for (var j = 0; j < table.rows[i].cells.length; j++) { row.push('"' + table.rows[i].cells[j].textContent.replace(/"/g,'""') + '"'); }
+        csv.push(row.join(","));
+    }
+    var blob = new Blob(["\uFEFF" + csv.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename + ".csv"; a.click();
+}
+</script>
+{% endblock %}
